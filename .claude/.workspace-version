@@ -1,0 +1,38 @@
+{
+  "version": "1.1.0",
+  "skills": {
+    "init": "966bc517ccb480c4fbcac831b0bf9b17f9d958c0777da7c9d36cb4e544069054",
+    "plan": "5e9cf1e8a6b22df3d82a23f94424ee5cd6cc9ed900319813f86f54af4356ba4c",
+    "apply": "3570cebddf30aef8565da9a21ad976d4a199567b5549c542acfa2e00ec43f1fc",
+    "test": "697fca5ed8124039fafe2ab34ccaaaeeede2cd709b23173c861acf5bd9042ecd",
+    "build": "8ecb9fa273b5f4086b094c99b2a1fa410884a5a412fb71e536630a4a73ca49d1",
+    "review": "dfada72298f71d80b701a813c90603a95ec7c30b692331706f73a40b15416ab1",
+    "secure": "73bdcf771582d145fe26c6459e88faed8d960ce89bafa8fdef541ddf23768800",
+    "deploy": "b929d913260f815b4c8c46fa44e7c362bff3ee224f4e5bdc05faa677ab50dcda",
+    "branches": "323e9be6ae6c79ab811f04c96b9a636364370db46cce0d8349eb28cb8eaae906",
+    "debug": "a5a3d81a58d75645001a7d260d00f3adaae4063d574a8a9c3a47ecf1d146e735",
+    "audit": "f0d8aa6f9ac8123d89e47c25777b9550e914fbe66e391546eeb9f130e9112421",
+    "pentest": "5e705ab0cffe7bbcb21c2510dd9a2e96cd0bd4e7ec0f7c1754246d00e404102d",
+    "sync": "0b19dda6d4274e4c36590b14621324b5c27d084f8b1782e3e08b36f317d17579",
+    "rollback": "caf4a283d2261ca261c7010bfd806426e013f268a8610cfd7e31656d76062c7c",
+    "design": "f9ab665ea7d6a7f9d729b382cdd3fd72f905d0e49dcebefac2a7b56704322335",
+    "triage": "31a6586159bcd2cd86cd47b9e0c19780969b54a480a8701e2aca64828b0b5a04",
+    "cross": "77b3bc439350fb2f12be73738a58b15aadedc38276840c947bfb53b90ecc3d79",
+    "setup": "2e5be9bfb6d61308170e9af58674d8432f5f6b2efc8ecdeb41fe259440341ee0"
+  },
+  "rules": {
+    "branching.md": "58311e7579acbb3da3f67d1b2b21f73209b1b261d774b5ec4226b02cc6fb5186",
+    "commits.md": "0a17cca22d9b48ae75dc85c3939d71fb85f16da1f898ad4989d868cfa6298fa0",
+    "python-django.md": "10a08968a9b11b87e75a6feff662ecdb1e89e25b699427571c53f47607fc38cb",
+    "tests.md": "c11197669d613142649c380f100842487dfe3f5bde543ddc33eed7d4f4593e13"
+  },
+  "scripts": {
+    "resolve-gh-creds.sh": "ed8308952637461fbe04d7abeb44aa1823a351ec1f6a77283ed9b90c608ce443"
+  },
+  "installedAt": "2026-04-28T11:53:29.908Z",
+  "githubProject": {
+    "number": 3,
+    "url": "https://github.com/users/Dev3ch/projects/3",
+    "owner": "Dev3ch"
+  }
+}
