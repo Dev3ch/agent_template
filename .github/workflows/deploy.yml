@@ -1,0 +1,91 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Módulo a desplegar"
+        required: true
+        type: string
+      cloud:
+        description: "Cloud destino"
+        required: true
+        type: choice
+        options:
+          - azure
+          - aws
+          - gcp
+      tag:
+        description: "Tag de la imagen"
+        required: false
+        default: "latest"
+        type: string
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate module has service
+        run: |
+          if [ ! -d "${{ inputs.module }}/service" ]; then
+            echo "✗ Módulo '${{ inputs.module }}' no tiene service/ — nada para desplegar."
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: secrets.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push
+        run: |
+          IMAGE="${{ vars.REGISTRY_PREFIX || 'docker.io/dev3ch' }}/${{ inputs.module }}-service:${{ inputs.tag }}"
+          docker build -f ${{ inputs.module }}/service/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      # Auth + deploy específico por cloud
+      - name: Azure — login + deploy
+        if: inputs.cloud == 'azure'
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_CONTAINERAPPS_ENV: ${{ vars.AZURE_CONTAINERAPPS_ENV }}
+          REGISTRY_PREFIX: ${{ vars.REGISTRY_PREFIX || 'docker.io/dev3ch' }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          az login --service-principal \
+            -u ${{ secrets.AZURE_CLIENT_ID }} \
+            -p ${{ secrets.AZURE_CLIENT_SECRET }} \
+            --tenant ${{ secrets.AZURE_TENANT_ID }}
+          ./deploy/azure/deploy.sh ${{ inputs.module }} ${{ inputs.tag }}
+
+      - name: AWS — deploy
+        if: inputs.cloud == 'aws'
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: ./deploy/aws/deploy.sh ${{ inputs.module }} ${{ inputs.tag }}
+
+      - name: GCP — deploy
+        if: inputs.cloud == 'gcp'
+        env:
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          echo '${{ secrets.GCP_SA_KEY }}' > /tmp/sa.json
+          gcloud auth activate-service-account --key-file=/tmp/sa.json
+          gcloud config set project "$GCP_PROJECT"
+          ./deploy/gcp/deploy.sh ${{ inputs.module }} ${{ inputs.tag }}

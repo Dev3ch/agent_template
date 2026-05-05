@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging, dev]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.modules.outputs.modules }}
+      shared_changed: ${{ steps.shared.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed modules
+        id: modules
+        run: |
+          # Lista de módulos = directorios top-level con un service/ o agents/
+          ALL_MODULES=$(find . -maxdepth 2 -type d \( -name service -o -name agents \) \
+            | sed -E 's|^\./([^/]+)/.*|\1|' | sort -u | grep -v '^_template$' || true)
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            CHANGED=$(git diff --name-only "$BASE" HEAD | awk -F/ '{print $1}' | sort -u)
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD | awk -F/ '{print $1}' | sort -u || echo "$ALL_MODULES")
+          fi
+
+          # Intersección de cambiados ∩ módulos reales
+          MODULES_JSON=$(echo "$ALL_MODULES" | grep -Fx -f <(echo "$CHANGED") | jq -R . | jq -s -c .)
+          [ "$MODULES_JSON" = "[]" ] && MODULES_JSON='[""]'  # placeholder vacío
+          echo "modules=$MODULES_JSON" >> "$GITHUB_OUTPUT"
+
+      - name: Detect shared changes
+        id: shared
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="HEAD~1"
+          fi
+          if git diff --name-only "$BASE" HEAD | grep -qE '^(shared/|pyproject.toml)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  lint-and-test:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Setup Python
+        run: uv python install 3.12
+      - name: Sync deps
+        run: uv sync --all-groups
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format check
+        run: uv run ruff format --check .
+      - name: Tests (unit)
+        run: uv run pytest -m "not integration"
+
+  docker-build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.modules != '[""]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.detect-changes.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip if module has no service
+        id: check
+        run: |
+          if [ -d "${{ matrix.module }}/service" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "Module '${{ matrix.module }}' has no service/ — skipping docker build."
+          fi
+      - uses: docker/setup-buildx-action@v3
+        if: steps.check.outputs.build == 'true'
+      - name: Build image
+        if: steps.check.outputs.build == 'true'
+        run: |
+          docker build \
+            -f ${{ matrix.module }}/service/Dockerfile \
+            -t ${{ matrix.module }}-service:ci \
+            .

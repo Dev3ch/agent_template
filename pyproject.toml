@@ -1,0 +1,42 @@
+[project]
+name = "agents-monorepo"
+version = "0.1.0"
+description = "Monorepo modular de agentes — generado a partir de dev3ch/agent_template"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+# Cada módulo con service/ se registra acá automáticamente por /new-module.
+# Ejemplo:
+#   members = ["marketing/service", "sales/service"]
+members = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["_template", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "S", "RUF"]
+ignore = ["S101"]  # asserts permitidos en tests
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S"]
+"**/tests/**" = ["S"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra --strict-markers"
+testpaths = ["tests", "shared", "*/agents/*/tests"]
+python_files = ["test_*.py"]
+markers = [
+    "integration: tests que tocan servicios reales (lentos)",
+    "unit: tests unitarios rápidos",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+    "httpx>=0.27",
+]

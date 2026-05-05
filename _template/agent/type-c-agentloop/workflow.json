@@ -1,0 +1,40 @@
+{
+  "name": "{{MODULE_NAME}}-{{AGENT_NAME}}",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "{{MODULE_NAME}}-{{AGENT_NAME}}",
+        "responseMode": "lastNode"
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SERVICE_BASE_URL }}/agents/{{AGENT_NAME}}/run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ input: $json.body, env: $env.AGENT_ENV || 'prod' }) }}",
+        "options": {"timeout": 120000}
+      },
+      "id": "call-agentloop",
+      "name": "AgentLoop {{AGENT_NAME}}",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [500, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "AgentLoop {{AGENT_NAME}}", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"},
+  "tags": ["{{MODULE_NAME}}", "type-c", "agent"]
+}

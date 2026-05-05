@@ -1,0 +1,35 @@
+{
+  "name": "shared-send-whatsapp",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shared-send-whatsapp",
+        "responseMode": "lastNode"
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [{"value1": "={{ $json.body._env }}", "operation": "equal", "value2": "dev"}]
+        }
+      },
+      "id": "is-dev",
+      "name": "¿Es dev?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [400, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {"main": [[{"node": "¿Es dev?", "type": "main", "index": 0}]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "tags": ["shared", "notification", "whatsapp"]
+}
